@@ -36,6 +36,16 @@ public class AuthorPermissions
 
     public AuthorPermissions(MessageReceivedEvent event)
     {
+        // Temp workaround, accessing roles from the bot causes an exception not sure why
+        if(event.getAuthor().isBot() && DiscordWhitelister.acceptBotMessages)
+        {
+            userCanAddRemove = true;
+            userCanAdd = true;
+            userHasLimitedAdd = true;
+            userCanUseClear = true;
+            return;
+        }
+
         for (Role role : event.getGuild().getMember(event.getAuthor()).getRoles())
         {
             if(!DiscordWhitelister.useIdForRoles)
