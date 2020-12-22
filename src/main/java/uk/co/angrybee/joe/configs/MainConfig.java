@@ -143,6 +143,8 @@ public class MainConfig
 
         CheckEntry("un-whitelist-on-server-leave", true);
 
+        CheckEntry("accept-bot-messages", false);
+
         // Remove old role entry if found, move role to new array (for people with v1.3.6 or below)
         if(whitelisterBotConfig.get("whitelisted-role") != null)
         {

@@ -318,7 +318,7 @@ public class DiscordClient extends ListenerAdapter
             if (!Arrays.asList(targetTextChannels).contains(messageReceivedEvent.getTextChannel().getId()))
                 return;
 
-            if (messageReceivedEvent.getAuthor().isBot())
+            if ((messageReceivedEvent.getAuthor().isBot() && !DiscordWhitelister.acceptBotMessages) || messageReceivedEvent.getAuthor().getIdLong() == javaDiscordAPI.getSelfUser().getIdLong())
                 return;
 
             String messageContents = messageReceivedEvent.getMessage().getContentRaw();

@@ -34,6 +34,7 @@ public class DiscordWhitelister extends JavaPlugin
     public static boolean useOnBanEvents = true;
     public static boolean useUltraPerms = false;
     public static boolean useOnWhitelistCommands = false;
+    public static boolean acceptBotMessages = false;
 
     public static boolean botEnabled;
 
@@ -121,6 +122,7 @@ public class DiscordWhitelister extends JavaPlugin
         showVanishedPlayersInCount = MainConfig.getMainConfig().getBoolean("show-vanished-players-in-player-count");
         useInGameAddRemoves = MainConfig.getMainConfig().getBoolean("add-in-game-adds-and-removes-to-list");
         useOnBanEvents = MainConfig.getMainConfig().getBoolean("use-on-ban-events");
+        acceptBotMessages = MainConfig.getMainConfig().getBoolean("accept-bot-messages");
 
         // Check for UltraPerms first
         if(MainConfig.getMainConfig().getBoolean("assign-perms-with-ultra-perms"))

@@ -28,7 +28,6 @@ public class CommandWhoIs
         AuthorPermissions authorPermissions = new AuthorPermissions(messageReceivedEvent);
         User author = messageReceivedEvent.getAuthor();
         TextChannel channel = messageReceivedEvent.getTextChannel();
-        Member member = messageReceivedEvent.getMember();
 
         if (!authorPermissions.isUserCanAddRemove() && !authorPermissions.isUserCanAdd())
         {
