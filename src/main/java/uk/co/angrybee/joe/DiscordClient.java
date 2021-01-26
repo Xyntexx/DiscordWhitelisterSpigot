@@ -391,13 +391,7 @@ public class DiscordClient extends ListenerAdapter {
                                         || !WhitelistedPlayers.usingEasyWhitelist && !WhitelistedPlayers.CheckForPlayer(finalNameToRemove)) {
                                     channel.sendMessage(embedBuilderSuccess.build()).queue();
 
-                                    if (DiscordWhitelister.useLuckPerms) {
-                                        LpRemovePermsFromUser(finalNameToRemove, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
-                                    }
-
-                                    if (DiscordWhitelister.useUltraPerms) {
-                                        UpRemovePermsFromUser(finalNameToRemove, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
-                                    }
+                                    RemovePermissions(finalNameToRemove);
 
                                     if (whitelistedRoleAutoRemove) {
                                         List<String> whitelistRoles = new LinkedList<>();
@@ -973,6 +967,7 @@ public class DiscordClient extends ListenerAdapter {
                 } else {
                     ExecuteServerCommand("whitelist remove " + minecraftNameToRemove.toString());
                 }
+                RemovePermissions(minecraftNameToRemove.toString());
             }
 
             try {
@@ -1202,6 +1197,27 @@ public class DiscordClient extends ListenerAdapter {
         }
     }
 
+
+
+    public static void AssignPermissions(String targetPlayerName){
+        if (DiscordWhitelister.useLuckPerms) {
+            LpAssignPermsToUser(targetPlayerName, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+        }
+
+        if (DiscordWhitelister.useUltraPerms) {
+            UpAssignPermsToUser(targetPlayerName, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+        }
+    }
+
+    public static void RemovePermissions(String targetPlayerName){
+        if (DiscordWhitelister.useLuckPerms) {
+            LpRemovePermsFromUser(targetPlayerName, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+        }
+
+        if (DiscordWhitelister.useUltraPerms) {
+            UpRemovePermsFromUser(targetPlayerName, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+        }
+    }
     // TODO: improve, not go through console commands
     // For ultra perms
     public static void LpAssignPermsToUser(String targetPlayerName, List<String> permsToAssign) {
