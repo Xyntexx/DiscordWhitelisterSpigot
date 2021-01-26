@@ -67,17 +67,15 @@ public class DiscordWhitelister extends JavaPlugin
         }
 
         // Check for leavers if enabled
-        if(MainConfig.getMainConfig().getBoolean("un-whitelist-on-server-leave"))
+        try
         {
-            try
-            {
-                DiscordClient.StartUpMemberCheck();
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-            }
+            DiscordClient.StartUpMemberCheck();
         }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+
 
         this.getCommand("discordwhitelister").setExecutor(new CommandStatus());
         this.getCommand("discordwhitelisterabout").setExecutor(new CommandAbout());

@@ -5,12 +5,14 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.*;
 import net.dv8tion.jda.api.events.guild.member.GuildMemberRemoveEvent;
+import net.dv8tion.jda.api.events.guild.member.GuildMemberRoleRemoveEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
+import org.apache.commons.lang3.ArrayUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
@@ -968,36 +970,61 @@ public class DiscordClient extends ListenerAdapter
             return;
 
         String discordUserToRemove = event.getMember().getId();
-        DiscordWhitelister.getPlugin().getLogger().info(discordUserToRemove + " left. Removing their whitelisted entries...");
-        List<?> ls =  UserList.getRegisteredUsers(discordUserToRemove);
 
-        if(ls != null)
+        for(int i = 0; i < javaDiscordAPI.getGuilds().size(); i++)
         {
-            for (Object minecraftNameToRemove : ls)
-            {
-                DiscordWhitelister.getPlugin().getLogger().info(minecraftNameToRemove.toString() + " left. Removing their whitelisted entries.");
-                if (WhitelistedPlayers.usingEasyWhitelist)
-                {
-                    ExecuteServerCommand("easywl remove " + minecraftNameToRemove.toString());
-                } else {
-                    ExecuteServerCommand("whitelist remove " + minecraftNameToRemove.toString());
-                }
-            }
-
-            try
-            {
-                UserList.resetRegisteredUsers(discordUserToRemove);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
+            Member member = javaDiscordAPI.getGuilds().get(i).getMemberById(discordUserToRemove);
+            if(member != null){
+                DiscordWhitelister.getPlugin().getLogger().info(discordUserToRemove + " still member in other guild. Doing nothing...");
                 return;
             }
-            DiscordWhitelister.getPlugin().getLogger().info(discordUserToRemove + " left. Successfully removed their whitelisted entries from the user list.");
         }
-        else
+        DiscordWhitelister.getPlugin().getLogger().info(discordUserToRemove + " left. Removing their whitelisted entries...");
+        UnWhitelist(discordUserToRemove);
+    }
+
+    @Override
+    public void onGuildMemberRoleRemove(@Nonnull GuildMemberRoleRemoveEvent event)
+    {
+        if(!MainConfig.getMainConfig().getBoolean("un-whitelist-role-remove"))
+            return;
+
+        String[]  allRoles = ArrayUtils.addAll(allowedToAddRemoveRoles, ArrayUtils.addAll(allowedToAddRoles, ArrayUtils.addAll(allowedToAddLimitedRoles, allowedToClearNamesRoles)));
+
+        String discordUserId= event.getMember().getId();
+        List<Role> removedRoles = event.getRoles();
+        boolean weakRoleRemoved = false;
+        for(Role role:removedRoles){
+            if(Arrays.asList(allowedToAddLimitedRoles).contains(role.getId())){
+                weakRoleRemoved = true;
+                break;
+            }
+        }
+        if(!weakRoleRemoved){
+            DiscordWhitelister.getPlugin().getLogger().info(discordUserId + " unrelated role removed. Doing nothing...");
+            return;
+        }
+        DiscordWhitelister.getPlugin().getLogger().info(discordUserId + " weak role removed. Checking remaining roles...");
+        boolean rolesRemaining= false;
+        for(int i = 0; i < javaDiscordAPI.getGuilds().size(); i++)
         {
-            DiscordWhitelister.getPlugin().getLogger().warning(discordUserToRemove + " left. Could not remove any whitelisted entries as they did not whitelist through this plugin.");
+            Member member = javaDiscordAPI.getGuilds().get(i).getMemberById(discordUserId);
+            if(member != null){
+                List<Role> roles = member.getRoles();
+                for(Role role:roles){
+                    if(Arrays.asList(allRoles).contains(role.getId())){
+                        rolesRemaining = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if(!rolesRemaining){
+            DiscordWhitelister.getPlugin().getLogger().info(discordUserId + " has no roles remaining. Removing their whitelisted entries...");
+            UnWhitelist(discordUserId);
+        }
+        else{
+            DiscordWhitelister.getPlugin().getLogger().info(discordUserId + "  has role(s) remaining. Doing nothing...");
         }
     }
 
@@ -1006,11 +1033,16 @@ public class DiscordClient extends ListenerAdapter
         if(!MainConfig.getMainConfig().getBoolean("un-whitelist-on-server-leave"))
             return;
 
+        boolean checkRoleless = (MainConfig.getMainConfig().getBoolean("un-whitelist-role-remove"));
+
         // Don't attempt to remove members if not connected
         if(javaDiscordAPI.getStatus() != JDA.Status.CONNECTED)
             return;
 
         DiscordWhitelister.getPluginLogger().info("Checking Discord IDs for leavers...");
+        if(checkRoleless){
+            DiscordWhitelister.getPluginLogger().info("Checking Discord IDs for roleless...");
+        }
 
         Yaml idYaml = new Yaml();
         UserList.SaveStore();
@@ -1034,8 +1066,10 @@ public class DiscordClient extends ListenerAdapter
             // Check all guilds
             for(int i = 0; i < javaDiscordAPI.getGuilds().size(); i++)
             {
-                if(javaDiscordAPI.getGuilds().get(i).getMemberById(entry.getKey()) != null)
+                if(javaDiscordAPI.getGuilds().get(i).getMemberById(entry.getKey()) != null){
                     inGuild = true;
+                }
+
             }
 
             // un-whitelist associated minecraft usernames if not in any guilds
@@ -1068,6 +1102,62 @@ public class DiscordClient extends ListenerAdapter
                             + " left. Successfully removed their whitelisted entries from the user list.");
                 }
             }
+
+            String[]  allRoles = ArrayUtils.addAll(allowedToAddRemoveRoles, ArrayUtils.addAll(allowedToAddRoles, ArrayUtils.addAll(allowedToAddLimitedRoles, allowedToClearNamesRoles)));
+            boolean rolesRemaining= false;
+            for(int i = 0; i < javaDiscordAPI.getGuilds().size(); i++)
+            {
+                Member member = javaDiscordAPI.getGuilds().get(i).getMemberById(entry.getKey());
+                if(member != null){
+                    List<Role> roles =member.getRoles();
+                    for(Role role:roles){
+                        if(Arrays.asList(allRoles).contains(role.getId())){
+                            rolesRemaining = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if(!rolesRemaining){
+                DiscordWhitelister.getPlugin().getLogger().info(entry.getKey() + " has no roles remaining. Removing their whitelisted entries...");
+                UnWhitelist(entry.getKey());
+            }
+        }
+    }
+
+    // Remove player from whitelist
+    private static Boolean UnWhitelist(String discordUserToRemove)
+    {
+        DiscordWhitelister.getPlugin().getLogger().info("Removing " +discordUserToRemove + " from whitelist.");
+        List<?> ls =  UserList.getRegisteredUsers(discordUserToRemove);
+        if(ls != null)
+        {
+            for (Object minecraftNameToRemove : ls)
+            {
+                if (WhitelistedPlayers.usingEasyWhitelist)
+                {
+                    ExecuteServerCommand("easywl remove " + minecraftNameToRemove.toString());
+                } else {
+                    ExecuteServerCommand("whitelist remove " + minecraftNameToRemove.toString());
+                }
+            }
+
+            try
+            {
+                UserList.resetRegisteredUsers(discordUserToRemove);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+                return false;
+            }
+            DiscordWhitelister.getPlugin().getLogger().info("Removed " +discordUserToRemove + " from whitelist successfully.");
+            return true;
+        }
+        else
+        {
+            DiscordWhitelister.getPlugin().getLogger().warning(discordUserToRemove + " Could not remove any whitelisted entries as they did not whitelist through this plugin.");
+            return false;
         }
     }
 
