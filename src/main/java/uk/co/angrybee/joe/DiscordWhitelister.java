@@ -33,6 +33,7 @@ public class DiscordWhitelister extends JavaPlugin
     public static boolean useInGameAddRemoves = true;
     public static boolean useOnBanEvents = true;
     public static boolean useUltraPerms = false;
+    public static boolean useLuckPerms = false;
     public static boolean useOnWhitelistCommands = false;
     public static boolean acceptBotMessages = false;
 
@@ -124,7 +125,20 @@ public class DiscordWhitelister extends JavaPlugin
         useOnBanEvents = MainConfig.getMainConfig().getBoolean("use-on-ban-events");
         acceptBotMessages = MainConfig.getMainConfig().getBoolean("accept-bot-messages");
 
-        // Check for UltraPerms first
+        // Check for LuckPerms first
+        if(MainConfig.getMainConfig().getBoolean("assign-perms-with-luck-perms"))
+        {
+            if(DiscordWhitelister.getPlugin().getServer().getPluginManager().getPlugin("LuckPerms") != null)
+            {
+                useLuckPerms = true;
+                DiscordWhitelister.getPluginLogger().info("LuckPerms found!");
+            }
+            else
+            {
+                DiscordWhitelister.getPluginLogger().warning("LuckPerms was not found but is enabled in the config. Doing nothing...");
+                useLuckPerms = false;
+            }
+        }
         if(MainConfig.getMainConfig().getBoolean("assign-perms-with-ultra-perms"))
         {
             if(DiscordWhitelister.getPlugin().getServer().getPluginManager().getPlugin("UltraPermissions") != null)

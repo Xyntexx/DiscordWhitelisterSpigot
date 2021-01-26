@@ -443,9 +443,14 @@ public class DiscordClient extends ListenerAdapter
                                 {
                                     channel.sendMessage(embedBuilderSuccess.build()).queue();
 
+                                    if(DiscordWhitelister.useLuckPerms)
+                                    {
+                                        LpRemovePermsFromUser(finalNameToRemove, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+                                    }
+
                                     if(DiscordWhitelister.useUltraPerms)
                                     {
-                                        RemovePermsFromUser(finalNameToRemove, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+                                        UpRemovePermsFromUser(finalNameToRemove, PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
                                     }
 
                                     if(whitelistedRoleAutoRemove)
@@ -675,8 +680,11 @@ public class DiscordClient extends ListenerAdapter
                             }
 
                             // Clear permissions
+                            // Clear permissions
+                            if(DiscordWhitelister.useLuckPerms)
+                                DiscordClient.LpRemovePermsFromUser(splitMessage[userNameIndex], PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
                             if(DiscordWhitelister.useUltraPerms)
-                                DiscordClient.RemovePermsFromUser(splitMessage[userNameIndex], PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
+                                DiscordClient.UpRemovePermsFromUser(splitMessage[userNameIndex], PermissionsConfig.getPermissionsConfig().getStringList("perms-on-whitelist"));
                         }
 
                         // Success message
@@ -1294,10 +1302,27 @@ public class DiscordClient extends ListenerAdapter
             }
         }
     }
+    // TODO: improve, not go through console commands
+    // For ultra perms
+    public static void LpAssignPermsToUser(String targetPlayerName, List<String> permsToAssign)
+    {
+        for(int i = 0; i < permsToAssign.size(); i++)
+        {
+            DiscordClient.ExecuteServerCommand("lp user " + targetPlayerName + " permission set " + permsToAssign.get(i));
+        }
+    }
+
+    public static void LpRemovePermsFromUser(String targetPlayerName, List<String> permsToRemove)
+    {
+        for(int i = 0; i < permsToRemove.size(); i++)
+        {
+            DiscordClient.ExecuteServerCommand("lp user " + targetPlayerName + " permission unset " + permsToRemove.get(i));
+        }
+    }
 
     // TODO: improve, not go through console commands
     // For ultra perms
-    public static void AssignPermsToUser(String targetPlayerName, List<String> permsToAssign)
+    public static void UpAssignPermsToUser(String targetPlayerName, List<String> permsToAssign)
     {
         for(int i = 0; i < permsToAssign.size(); i++)
         {
@@ -1305,7 +1330,7 @@ public class DiscordClient extends ListenerAdapter
         }
     }
 
-    public static void RemovePermsFromUser(String targetPlayerName, List<String> permsToRemove)
+    public static void UpRemovePermsFromUser(String targetPlayerName, List<String> permsToRemove)
     {
         for(int i = 0; i < permsToRemove.size(); i++)
         {
