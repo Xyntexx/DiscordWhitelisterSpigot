@@ -868,6 +868,7 @@ public class DiscordClient extends ListenerAdapter {
         if (!rolesRemaining) {
             DiscordWhitelister.getPlugin().getLogger().info(discordUserId + " has no roles remaining. Removing their whitelisted entries...");
             UnWhitelist(discordUserId);
+            RemoveRolesFromUser(discordUserId,Arrays.asList(whitelistedRoleNames));
         } else {
             DiscordWhitelister.getPlugin().getLogger().info(discordUserId + "  has role(s) remaining. Doing nothing...");
         }
